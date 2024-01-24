@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="style.css">
+    <title>Quiz Time</title>
+</head>
+<body>
+<div class="quiz-container">
+    <h1>Quiz Time!</h1>
+
+    <label for="quizIdInput">Enter Quiz ID:</label>
+    <input type="text" id="quizIdInput" placeholder="Quiz ID">
+    <button class="button" id="loadQuizButton">Load Quiz</button>
+
+    <!-- Add the "Create Quiz" button -->
+    <button class="button" id="createQuizButton">Create Quiz</button>
+
+    <div class="question" id="question-container">
+        <!-- Question content will be added dynamically here -->
+    </div>
+
+    <div class="answers-container" id="answers-container">
+        <!-- Answers will be added dynamically here -->
+    </div>
+
+    <button class="button" id="correct-answer-button">Show Correct Answer</button>
+    <button class="button" id="next-button">Next</button>
+</div>
+<script>
+    var currentQuestionIndex = 0;
+    var quizData;
+
+    function loadQuestionAndAnswers() {
+        var currentQuestion = quizData[currentQuestionIndex];
+
+        // Update question
+        document.getElementById('question-container').innerHTML = '<h3>' + currentQuestion.question + '</h3>';
+
+        // Update answers
+        var answersContainer = document.getElementById('answers-container');
+        answersContainer.innerHTML = '';
+        currentQuestion.answers.forEach(function (answer, index) {
+            var button = document.createElement('button');
+            button.className = 'answer';
+            button.textContent = answer;
+
+            // Highlight the correct answer
+            if (answer === currentQuestion.correctAnswer) {
+                button.dataset.correct = true;
+            }
+
+            answersContainer.appendChild(button);
+        });
+    }
+
+    function loadCorrectAnswer() {
+        var correctButton = document.querySelector('.answer[data-correct="true"]');
+        if (correctButton) {
+            correctButton.style.backgroundColor = '#45a049';
+            correctButton.style.color = '#fff';
+        }
+    }
+
+    function loadNextQuestion() {
+        // Reset styling
+        var answerButtons = document.querySelectorAll('.answer');
+        answerButtons.forEach(function (button) {
+            button.style.backgroundColor = 'black';
+            button.style.color = '#fff';
+        });
+
+        currentQuestionIndex++;
+
+        if (currentQuestionIndex < quizData.length) {
+            loadQuestionAndAnswers();
+        } else {
+            // Quiz completed, you can add any additional logic here
+            alert("Quiz Completed!");
+        }
+    }
+
+    function toggleQuizInputVisibility(visible) {
+        var quizInputLabel = document.querySelector('label[for="quizIdInput"]');
+        var quizInput = document.getElementById('quizIdInput');
+        var loadQuizButton = document.getElementById('loadQuizButton');
+
+        if (visible) {
+            quizInputLabel.classList.remove('hide');
+            quizInput.classList.remove('hide');
+            loadQuizButton.classList.remove('hide');
+            createQuizButton.classList.remove('hide')
+        } else {
+            quizInputLabel.classList.add('hide');
+            quizInput.classList.add('hide');
+            loadQuizButton.classList.add('hide');
+            createQuizButton.classList.add('hide')
+        }
+    }
+
+    function redirectToCreatePage() {
+        // Redirect to create.html when the "Create Quiz" button is clicked
+        window.location.href = 'create.html';
+    }
+
+    function fetchQuizData(quizId) {
+        // Fetch JSON data
+        fetch('http://localhost:3000/api/getQuiz/' + quizId)
+            .then(response => response.json())
+            .then(data => {
+                // Check if the data has the correct format
+                if (Array.isArray(data.questions) && data.questions.length > 0 && 'answers' in data.questions[0]) {
+                    quizData = data.questions;
+                    loadQuestionAndAnswers();
+                    toggleQuizInputVisibility(false); // Hide the input and button
+                } else {
+                    console.error('Invalid quiz data format:', data);
+                    alert('Error loading quiz. Please check the console for details.');
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching JSON:', error);
+                alert('Error fetching quiz data. Please check the console for details.');
+            });
+    }
+
+    document.getElementById('loadQuizButton').addEventListener('click', function () {
+        var quizId = document.getElementById('quizIdInput').value;
+        if (quizId) {
+            fetchQuizData(quizId);
+        } else {
+            alert('Please enter a valid Quiz ID.');
+        }
+    });
+
+    document.getElementById('correct-answer-button').addEventListener('click', loadCorrectAnswer);
+    document.getElementById('next-button').addEventListener('click', loadNextQuestion);
+
+    // Add event listener for the "Create Quiz" button
+    document.getElementById('createQuizButton').addEventListener('click', redirectToCreatePage);
+</script>
+
+
+</body>
+</html>
