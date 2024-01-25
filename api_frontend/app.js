@@ -1,14 +1,64 @@
 const express = require('express');
+const WebSocket = require("ws");
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
 const axios = require('axios');
 
 const app = express();
-const port = 3000;
+const myServer = app.listen(3000)
+let quizID
+let questionOD
 
 app.use(cors());
 app.use(bodyParser.json());
+app.use("/",express.static('public'))
+
+const wsServer = new WebSocket.Server({
+    noServer: true
+})                                      // a websocket server
+
+wsServer.on("connection", function(ws) {
+    console.log('WebSocket connected');
+
+    // Event handler for incoming messages on the WebSocket connection
+    ws.on("message", function(msg) {
+        console.log('Received message:', msg);
+
+        // Parse the JSON message
+        const message = JSON.parse(msg);
+
+        // Extract quizId and questionIndex from the parsed message
+        const { quizId, questionIndex } = message;
+        quizID = quizId
+        console.log(quizID);
+        console.log(questionOD);
+        questionOD = questionIndex
+        console.log('Received quizId:', quizId, 'questionIndex:', questionIndex);
+
+        // Broadcast the quiz and question information to all clients
+        wsServer.clients.forEach(function each(client) {
+            if (client.readyState === WebSocket.OPEN) {
+                // Send a JSON string containing quizId and questionIndex to each client
+                client.send(JSON.stringify({ quizId, questionIndex }));
+                console.log('Sent to client');
+            }
+        });
+    });
+});
+myServer.on('upgrade', async function upgrade(request, socket, head) {      //handling upgrade(http to websocekt) event
+
+    // accepts half requests and rejects half. Reload browser page in case of rejection
+    
+    if(Math.random() > 0.5){
+        return socket.end("HTTP/1.1 401 Unauthorized\r\n", "ascii")     //proper connection close in case of rejection
+    }
+    
+    //emit connection when request accepted
+    wsServer.handleUpgrade(request, socket, head, function done(ws) {
+      wsServer.emit('connection', ws, request);
+    });
+});
 
 // Connect to SQLite database
 const db = new sqlite3.Database('quizzes.db');
@@ -37,6 +87,17 @@ db.serialize(() => {
     `);
 
     db.run(`
+        CREATE TABLE IF NOT EXISTS Score (
+            ScoreID INTEGER PRIMARY KEY,
+            studentID INTEGER,
+            QuizID INTEGER,
+            score INTEGER,
+            FOREIGN KEY (studentID) REFERENCES Answer(studentID)
+            FOREIGN KEY (quizID) REFERENCES Quiz(quizID)
+        )
+    `);
+
+    db.run(`
         CREATE TABLE IF NOT EXISTS Answer (
             answerID INTEGER PRIMARY KEY,
             answer TEXT,
@@ -48,7 +109,7 @@ db.serialize(() => {
 });
 
 
-app.get('/', (req, res) => {
+app.get('/api', (req, res) => {
     res.send('Hello, this is your backend server!');
 });
 
@@ -103,9 +164,12 @@ app.post('/api/createQuiz', (req, res) => {
     }
 });
 
+
+
+
 app.get('/api/getQuiz/:quizId', (req, res) => {
     try {
-        const quizId = parseInt(req.params.quizId);
+        quizId = parseInt(req.params.quizId);
 
         // Fetch quiz data from the database
         db.get('SELECT * FROM Quiz WHERE quizID = ?', quizId, (err, quiz) => {
@@ -161,9 +225,11 @@ app.get('/api/getQuizData/:quizId', (req, res) => {
     }
 });
 
-app.post('/submit_answer/:question_id/:student_id/:answer', async (req, res) => {
-    const { question_id, student_id, answer } = req.params;
+app.post(`/submit_answer/:student_id/:answer`, async (req, res) => {
+    const {student_id, answer } = req.params;
     let finalAnswer = answer;
+    let question_id = questionOD
+    let quiz_id = quizID
 
     console.log(`Received answer for Question ${question_id} from Student ${student_id}: ${answer}`);
 
@@ -204,7 +270,7 @@ app.post('/submit_answer/:question_id/:student_id/:answer', async (req, res) => 
         }
 
         const answerID = this.lastID;
-        await saveAnswerToDatabase(finalAnswer, student_id, question_id);
+        await saveAnswerToDatabase(finalAnswer, student_id, question_id, quiz_id);
 
         res.json({ message: 'Answer received successfully' });
     } catch (err) {
@@ -260,24 +326,70 @@ function getAnswerFourFromDatabase(question_id) {
     });
 }
 
-function saveAnswerToDatabase(finalAnswer, student_id, question_id) {
+function saveAnswerToDatabase(finalAnswer, student_id, question_id, quiz_id) {
     return new Promise((resolve, reject) => {
-        const answerID = this.lastID;
-        db.run('INSERT INTO Answer (answerID, answer, studentID, questionID) VALUES (?, ?, ?, ?)',
-            [answerID, finalAnswer, student_id, question_id],
+        // Insert the answer into the Answer table
+        db.run('INSERT INTO Answer (answer, studentID, questionID) VALUES (?, ?, ?)',
+            [finalAnswer, student_id, question_id],
             function (err) {
                 if (err) {
                     reject(err);
-                } else {
-                    resolve();
+                    return;
                 }
+
+                const answerID = this.lastID;
+
+                // Calculate the score for the given answer
+                calculateScore(answerID, student_id, question_id, quiz_id)
+                    .then((score) => {
+                        // Update the Score table with the calculated score
+                        db.run('INSERT INTO Score (studentID, quizID, score) VALUES (?, ?, ?)',
+                            [student_id, quiz_id, score],
+                            function (err) {
+                                if (err) {
+                                    reject(err);
+                                } else {
+                                    resolve();
+                                }
+                            }
+                        );
+                    })
+                    .catch((err) => {
+                        reject(err);
+                    });
             }
         );
     });
 }
 
+function calculateScore(answerID, student_id, question_id, quiz_id) {
+    return new Promise((resolve, reject) => {
+        // Fetch the correct answer for the question
+        db.get('SELECT correctAnswer FROM Question WHERE questionID = ?', [question_id], (err, row) => {
+            if (err) {
+                reject(err);
+                return;
+            }
 
+            const correctAnswer = row.correctAnswer;
 
+            // Fetch the submitted answer
+            db.get('SELECT answer FROM Answer WHERE answerID = ?', [answerID], (err, row) => {
+                if (err) {
+                    reject(err);
+                    return;
+                }
+
+                const submittedAnswer = row.answer;
+
+                // Compare the submitted answer with the correct answer and calculate the score
+                const score = submittedAnswer === correctAnswer ? 1 : 0;
+
+                resolve(score);
+            });
+        });
+    });
+}
 
 
 // Close the database connection when the server is stopped
@@ -286,8 +398,4 @@ process.on('SIGINT', () => {
         console.log('Database connection closed.');
         process.exit(0);
     });
-});
-
-app.listen(port, () => {
-    console.log(`Server is running on http://localhost:${port}`);
 });
