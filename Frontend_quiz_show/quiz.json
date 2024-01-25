@@ -1,0 +1,27 @@
+[
+  {
+    "question": "What is the capital of France?",
+    "answers": ["Berlin", "Paris", "Madrid", "Rome"],
+    "correctAnswer": "Paris"
+  },
+  {
+    "question": "Which planet is known as the Red Planet?",
+    "answers": ["Earth", "Mars", "Venus", "Jupiter"],
+    "correctAnswer": "Mars"
+  },
+  {
+    "question": "What is the largest mammal in the world?",
+    "answers": ["Elephant", "Blue Whale", "Giraffe", "Hippopotamus"],
+    "correctAnswer": "Blue Whale"
+  },
+  {
+    "question": "In which year did Christopher Columbus first reach the Americas?",
+    "answers": ["1492", "1520", "1601", "1456"],
+    "correctAnswer": "1492"
+  },
+  {
+    "question": "What is the capital of Japan?",
+    "answers": ["Beijing", "Seoul", "Tokyo", "Bangkok"],
+    "correctAnswer": "Tokyo"
+  }
+]
