@@ -2,6 +2,7 @@ const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
+const axios = require('axios');
 
 const app = express();
 const port = 3000;
@@ -34,6 +35,16 @@ db.serialize(() => {
             FOREIGN KEY (quizID) REFERENCES Quiz(quizID)
         )
     `);
+
+    db.run(`
+        CREATE TABLE IF NOT EXISTS Answer (
+            answerID INTEGER PRIMARY KEY,
+            answer TEXT,
+            studentID INTEGER,
+            questionID INTEGER,
+            FOREIGN KEY (questionID) REFERENCES Question(questionID)
+    )
+`);
 });
 
 
@@ -150,21 +161,124 @@ app.get('/api/getQuizData/:quizId', (req, res) => {
     }
 });
 
-app.get('/api/getQuizData/:quizId', (req, res) => {
-    try {
-        const quizId = parseInt(req.params.quizId);
-        const quiz = quizzes.find(q => q._id === quizId);
+app.post('/submit_answer/:question_id/:student_id/:answer', async (req, res) => {
+    const { question_id, student_id, answer } = req.params;
+    let finalAnswer = answer;
 
-        if (quiz) {
-            const { questions } = quiz;
-            res.json(questions); // Send only the questions array
-        } else {
-            res.status(404).json({ success: false, error: 'Quiz not found' });
+    console.log(`Received answer for Question ${question_id} from Student ${student_id}: ${answer}`);
+
+    try {
+        // If the answer is 'A', fetch 'answerOne' from the 'Question' table
+        if (answer.toUpperCase() === 'A') {
+            const row = await getAnswerOneFromDatabase(question_id);
+            if (row) {
+                // If 'answerOne' is found, update finalAnswer
+                finalAnswer = row.answerOne;
+                console.log(`Answer for Question ${question_id} changed to ${finalAnswer}`);
+            }
         }
-    } catch (error) {
-        res.status(500).json({ success: false, error: error.message });
+        // If the answer is 'B', fetch 'answerTwo' from the 'Question' table
+        else if (answer.toUpperCase() === 'B') {
+            const row = await getAnswerTwoFromDatabase(question_id);
+            if (row) {
+                // If 'answerTwo' is found, update finalAnswer
+                finalAnswer = row.answerTwo;
+                console.log(`Answer for Question ${question_id} changed to ${finalAnswer}`);
+            }
+        }
+        else if (answer.toUpperCase() === 'C') {
+            const row = await getAnswerThreeFromDatabase(question_id);
+            if (row) {
+                // If 'answerTwo' is found, update finalAnswer
+                finalAnswer = row.answerThree;
+                console.log(`Answer for Question ${question_id} changed to ${finalAnswer}`);
+            }
+        }
+        else if (answer.toUpperCase() === 'D') {
+            const row = await getAnswerFourFromDatabase(question_id);
+            if (row) {
+                // If 'answerTwo' is found, update finalAnswer
+                finalAnswer = row.answerFour;
+                console.log(`Answer for Question ${question_id} changed to ${finalAnswer}`);
+            }
+        }
+
+        const answerID = this.lastID;
+        await saveAnswerToDatabase(finalAnswer, student_id, question_id);
+
+        res.json({ message: 'Answer received successfully' });
+    } catch (err) {
+        res.status(500).json({ success: false, error: err.message });
     }
 });
+
+function getAnswerOneFromDatabase(question_id) {
+    return new Promise((resolve, reject) => {
+        db.get('SELECT answerOne FROM Question WHERE questionID = ?', [question_id], (err, row) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
+
+function getAnswerTwoFromDatabase(question_id) {
+    return new Promise((resolve, reject) => {
+        db.get('SELECT answerTwo FROM Question WHERE questionID = ?', [question_id], (err, row) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
+
+function getAnswerThreeFromDatabase(question_id) {
+    return new Promise((resolve, reject) => {
+        db.get('SELECT answerThree FROM Question WHERE questionID = ?', [question_id], (err, row) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
+
+function getAnswerFourFromDatabase(question_id) {
+    return new Promise((resolve, reject) => {
+        db.get('SELECT answerFour FROM Question WHERE questionID = ?', [question_id], (err, row) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
+
+function saveAnswerToDatabase(finalAnswer, student_id, question_id) {
+    return new Promise((resolve, reject) => {
+        const answerID = this.lastID;
+        db.run('INSERT INTO Answer (answerID, answer, studentID, questionID) VALUES (?, ?, ?, ?)',
+            [answerID, finalAnswer, student_id, question_id],
+            function (err) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve();
+                }
+            }
+        );
+    });
+}
+
+
+
+
 
 // Close the database connection when the server is stopped
 process.on('SIGINT', () => {
