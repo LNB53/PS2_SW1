@@ -32,20 +32,19 @@
 </div>
 <script>
 
+    let data
     const ws = new WebSocket('ws://localhost:3000/myWebsocket');
     var currentQuestionIndex = 0;
     var quizData;
 
     ws.onmessage = function (event) {
     console.log('Received message from server:', event.data);
-
+    
     const message = JSON.parse(event.data);
 
     // Update quiz and question information based on the received message
     const { quizId, questionIndex } = message;
-    console.log('Updated quizId:', quizId, 'questionIndex:', questionIndex);
-    console.log(quizData.length);
-
+    
     currentQuestionIndex = questionIndex - 1; // Adjust index for the "Next" button
 
     // Load the question and answers based on the updated information
@@ -54,7 +53,6 @@
             loadNextQuestion();
         });
 };
-
 
     function loadQuestionAndAnswers() {
         var currentQuestion = quizData[currentQuestionIndex - 1];
@@ -113,6 +111,10 @@
         // Redirect to create.html when the "Create Quiz" button is clicked
         window.location.href = 'create.html';
     }
+    function redirectToLeaderPage() {
+        // Redirect to create.html when the "Create Quiz" button is clicked
+        window.location.href = 'top5.html';
+    }
 
     function redirectToChangePage() {
         // Redirect to create.html when the "Create Quiz" button is clicked
@@ -123,9 +125,10 @@
     async function fetchQuizData(quizId) {
     try {
         const response = await fetch('http://localhost:3000/api/getQuiz/' + quizId);
-        const data = await response.json();
+        data = await response.json();
 
-        console.log('Received data from server:', data);
+        console.log('Received data from server:', data.questions.length);
+        console.log(data.questions.length);
 
         if (data && data.questions) {
             quizData = data.questions;
@@ -141,6 +144,7 @@
         alert('Quiz completed');
     }
 }
+
 document.getElementById('loadQuizButton').addEventListener('click', function () {
     var quizId = document.getElementById('quizIdInput').value;
     
@@ -150,13 +154,49 @@ document.getElementById('loadQuizButton').addEventListener('click', function () 
         
         // Display the correct-answer-button
         document.getElementById('correct-answer-button').style.display = 'block';
+        document.getElementById('next-button').style.display = 'block';
     } else {
         alert('Please enter a valid Quiz ID.');
     }
 });
 
     document.getElementById('correct-answer-button').addEventListener('click', loadCorrectAnswer);
+
+
+
+
+
+    window.onbeforeunload = function() {
+        const message = {
+        quizId: parseInt(document.getElementById('quizIdInput').value),
+        questionIndex: 0 // Send the updated index to the server
+    };
+
+
+
+
+
+
+
+    // Send the quiz and question information to the server
+    ws.send(JSON.stringify(message));
+        };
+
+
+
     document.getElementById('next-button').addEventListener('click', function () {
+        if (data.questions.length < currentQuestionIndex + 1) {
+
+            redirectToLeaderPage();
+            const message = {
+        quizId: parseInt(document.getElementById('quizIdInput').value),
+        questionIndex: 0 // Send the updated index to the server
+    };
+
+    // Send the quiz and question information to the server
+    ws.send(JSON.stringify(message));
+        }
+        else {
     const message = {
         quizId: parseInt(document.getElementById('quizIdInput').value),
         questionIndex: currentQuestionIndex + 1 // Send the updated index to the server
@@ -164,7 +204,12 @@ document.getElementById('loadQuizButton').addEventListener('click', function () 
 
     // Send the quiz and question information to the server
     ws.send(JSON.stringify(message));
+}
 });
+
+
+
+
 
 
 
@@ -178,9 +223,7 @@ function loadNextQuestion() {
 
     currentQuestionIndex++;
 
-    if (currentQuestionIndex < quizData.length) {
-        loadQuestionAndAnswers();
-    } 
+    
 }
 
 
@@ -198,6 +241,20 @@ function loadNextQuestion() {
         alert('Please enter a valid Quiz ID.');
     }
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 // Handle WebSocket messages
 ws.onmessage = function (event) {

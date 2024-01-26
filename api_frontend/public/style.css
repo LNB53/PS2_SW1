@@ -9,7 +9,7 @@ body {
     height: 100vh;
 }
 
-#correct-answer-button{
+#correct-answer-button, #next-button{
     display: none;
 }
 

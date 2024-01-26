@@ -9,7 +9,7 @@ const app = express();
 const myServer = app.listen(3000)
 console.log("http://localhost:3000")
 let quizID
-let questionOD
+let questionID
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -33,8 +33,8 @@ wsServer.on("connection", function(ws) {
         const { quizId, questionIndex } = message;
         quizID = quizId
         console.log(quizID);
-        console.log(questionOD);
-        questionOD = questionIndex
+        console.log(questionID);
+        questionID = questionIndex
         console.log('Received quizId:', quizId, 'questionIndex:', questionIndex);
 
         // Broadcast the quiz and question information to all clients
@@ -261,13 +261,29 @@ app.get('/api/getQuizData/:quizId', (req, res) => {
     }
 });
 
+
+app.get('/api/getQuestionId', (req, res) => {
+    try {
+        
+        res.json(questionID);
+       
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
+
 app.post(`/submit_answer/:student_id/:answer`, async (req, res) => {
     const {student_id, answer } = req.params;
     let finalAnswer = answer;
-    let question_id = questionOD
+    let question_id = questionID
     let quiz_id = quizID
 
     console.log(`Received answer for Question ${question_id} from Student ${student_id}: ${answer}`);
+
+    if (question_id === 0) {
+        return res.status(400).json({ success: false, message: 'Invalid questionID' });
+    }
 
     try {
         // If the answer is 'A', fetch 'answerOne' from the 'Question' table
