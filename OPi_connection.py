@@ -107,18 +107,22 @@ try:
                     "answer": answer
                 }
             
-            requests.post(api_url, json=answer_data)
+            response = requests.post(api_url, json=answer_data)
 
-            # i = 1
-            # while i <= 20:
-            #     blink(RED_LED)
-            #     i += 1
-            # wiringpi.digitalWrite(RED_LED, 1)
-            # time.sleep(3)
-            # wiringpi.digitalWrite(RED_LED, 0)
-            # time.sleep(1)
-            # wiringpi.digitalWrite(GREEN_LED, 1)
-            # time.sleep(3)
+            while not response:
+                blink(RED_LED)
+
+            if response.status_code == 500:
+                wiringpi.digitalWrite(RED_LED, 1)
+                time.sleep(3)
+                wiringpi.digitalWrite(RED_LED, 0)
+                time.sleep(0.3)
+
+            elif response.status_code == 200:
+                wiringpi.digitalWrite(GREEN_LED, 1)
+                time.sleep(3)
+                wiringpi.digitalWrite(GREEN_LED, 0)
+                time.sleep(0.3)
 
     lights_off()
     print("\nEnd")
