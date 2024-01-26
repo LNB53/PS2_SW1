@@ -7,6 +7,7 @@ const axios = require('axios');
 
 const app = express();
 const myServer = app.listen(3000)
+console.log("http://localhost:3000")
 let quizID
 let questionOD
 
@@ -48,11 +49,7 @@ wsServer.on("connection", function(ws) {
 });
 myServer.on('upgrade', async function upgrade(request, socket, head) {      //handling upgrade(http to websocekt) event
 
-    // accepts half requests and rejects half. Reload browser page in case of rejection
     
-    if(Math.random() > 0.5){
-        return socket.end("HTTP/1.1 401 Unauthorized\r\n", "ascii")     //proper connection close in case of rejection
-    }
     
     //emit connection when request accepted
     wsServer.handleUpgrade(request, socket, head, function done(ws) {
@@ -130,6 +127,45 @@ app.get('/api/getQuizIds', (req, res) => {
     }
 });
 
+app.put('/api/changeQuiz/:quizId', (req, res) => {
+    try {
+        const quizId = req.params.quizId;
+        const updatedQuizData = req.body;
+
+        // Update Quiz table
+        db.run('UPDATE Quiz SET name = ? WHERE quizID = ?', [updatedQuizData.quizTitle, quizId], function(err) {
+            if (err) {
+                res.status(500).json({ success: false, error: err.message });
+                return;
+            }
+
+            // Delete existing questions for this quiz
+            db.run('DELETE FROM Question WHERE quizID = ?', quizId, function(err) {
+                if (err) {
+                    res.status(500).json({ success: false, error: err.message });
+                    return;
+                }
+
+                // Insert updated questions into Question table
+                updatedQuizData.questions.forEach(({ question, answerOne, answerTwo, answerThree, answerFour, correctAnswer }) => {
+                    db.run('INSERT INTO Question (quizID, questionName, answerOne, answerTwo, answerThree, answerFour, correctAnswer) VALUES (?, ?, ?, ?, ?, ?, ?)',
+                        [quizId, question, answerOne, answerTwo, answerThree, answerFour, correctAnswer],
+                        function(err) {
+                            if (err) {
+                                res.status(500).json({ success: false, error: err.message });
+                                return;
+                            }
+                        }
+                    );
+                });
+
+                res.json({ success: true, quizId });
+            });
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 app.post('/api/createQuiz', (req, res) => {
     try {

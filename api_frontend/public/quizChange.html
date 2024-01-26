@@ -51,6 +51,7 @@
         <button class="jsonn" type="button" onclick="loadJSONData()">Load JSON</button>
         <button class="jsonn" type="button" onclick="generateFinalJSON()">Generate JSON</button>
     </div>
+    <a href="index.html"><button type="button">Back to Index</button></a>
 </form>
 
 <script>
@@ -139,31 +140,58 @@
         updateQuestionNumbers();
     }
 
-    function generateFinalJSON() {
-        quizData.quizTitle = document.getElementById('quizTitle').value;
-        const jsonString = JSON.stringify(quizData, null, 2);
+    async function generateFinalJSON() {
+    quizData.quizTitle = document.getElementById('quizTitle').value;
 
-        // Create a Blob containing the JSON data
-        const blob = new Blob([jsonString], { type: 'application/json' });
+    // Transform questions array
+    const transformedQuestions = quizData.questions.map(question => {
+    return {
+        question: question.question,
+        answerOne: question.answerOne,
+        answerTwo: question.answerTwo,
+        answerThree: question.answerThree,
+        answerFour: question.answerFour,
+        correctAnswer: question.correctAnswer
+    };
+});
 
-        // Create a download link
-        const downloadLink = document.createElement('a');
-        downloadLink.href = window.URL.createObjectURL(blob);
-        downloadLink.download = 'quiz.json';
+    const transformedQuizData = {
+        quizTitle: quizData.quizTitle,
+        questions: transformedQuestions
+    };
 
-        // Trigger the download
-        downloadLink.click();
+    const jsonString = JSON.stringify(transformedQuizData, null, 2);
+    console.log(transformedQuizData);
+
+    try {
+        const response = await fetch(`/api/changeQuiz/${quizId}`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: jsonString
+        });
+
+        const data = await response.json();
+
+        // Handle response data if needed
+        console.log(data);
+    } catch (error) {
+        // Handle error
+        console.error('Error:', error);
     }
+}
 
     function displayQuestion() {
         // Display the current question
         if (currentQuestionIndex < quizData.questions.length) {
             const currentQuestion = quizData.questions[currentQuestionIndex];
+            console.log(currentQuestion);
             document.getElementById('question').value = currentQuestion.question;
-            document.getElementById('answerOne').value = currentQuestion.answerOne;
-            document.getElementById('answerTwo').value = currentQuestion.answerTwo;
-            document.getElementById('answerThree').value = currentQuestion.answerThree;
-            document.getElementById('answerFour').value = currentQuestion.answerFour;
+            document.getElementById('answerOne').value = currentQuestion.answers[0];
+            document.getElementById('answerTwo').value = currentQuestion.answers[1];
+            document.getElementById('answerThree').value = currentQuestion.answers[2];
+            document.getElementById('answerFour').value = currentQuestion.answers[3];
             document.getElementById('correctAnswer').value = currentQuestion.correctAnswer;
         } else {
             // Clear the form if there are no more questions
@@ -196,39 +224,39 @@
         }
     }
 
+    let quizId
+
     function loadJSONData() {
-        // Prompt the user to select a JSON file
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.onchange = (event) => {
-            const file = event.target.files[0];
+    // Prompt the user to enter the quiz ID
+    quizId = prompt('Enter Quiz ID:');
 
-            if (file) {
-                // Read the content of the selected JSON file
-                const reader = new FileReader();
-                reader.onload = (fileEvent) => {
-                    const jsonString = fileEvent.target.result;
-
-                    try {
-                        // Parse the JSON string and update the form
-                        const loadedData = JSON.parse(jsonString);
-                        quizData = loadedData;
-                        currentQuestionIndex = 0;
-                        displayQuestion();
-                        updateQuestionNumbers();
-                        document.getElementById('quizTitle').value = quizData.quizTitle || '';
-                    } catch (error) {
-                        alert('Error parsing JSON file. Please make sure it is a valid JSON file.');
-                    }
-                };
-
-                reader.readAsText(file);
-            }
-        };
-
-        input.click();
+    // Check if the user entered a value
+    if (quizId === null || quizId === '') {
+        alert('Quiz ID cannot be empty. Please try again.');
+        return;
     }
+
+    // Make a GET request to the endpoint with the dynamic quiz ID
+    fetch(`http://localhost:3001/api/getQuiz/${quizId}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`Network response was not ok: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(loadedData => {
+            // Update the form with the loaded JSON data
+            quizData = loadedData;
+            currentQuestionIndex = 0;
+            displayQuestion();
+            updateQuestionNumbers();
+            document.getElementById('quizTitle').value = quizData.quizTitle || '';
+        })
+        .catch(error => {
+            alert(`Error loading JSON data from endpoint: ${error.message}`);
+        });
+}
+
 
     function goToQuestion(index) {
         // Go to the specified question
