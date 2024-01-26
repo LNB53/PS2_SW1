@@ -1,0 +1,212 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport"
+          content="width=device-width, user-scalable=no, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="stylesheet" href="index.css">
+    <title>Create - Quiz</title>
+    
+</head>
+<body>
+<form id="jsonForm">
+    <label for="quizTitle">Quiz Title:</label>
+    <input type="text" id="quizTitle" name="quizTitle" required>
+
+    <label for="question">Question:</label>
+    <input type="text" id="question" name="question" required>
+
+    <label for="answerOne">Answer One:</label>
+    <input type="text" id="answerOne" name="answerOne" required>
+
+    <label for="answerTwo">Answer Two:</label>
+    <input type="text" id="answerTwo" name="answerTwo" required>
+
+    <label for="answerThree">Answer Three:</label>
+    <input type="text" id="answerThree" name="answerThree" required>
+
+    <label for="answerFour">Answer Four:</label>
+    <input type="text" id="answerFour" name="answerFour" required>
+
+    <label for="correctAnswer">Correct Answer:</label>
+    <input type="text" id="correctAnswer" name="correctAnswer" required>
+
+    <div id="questionNumbers"></div>
+
+    <button type="button" onclick="previousQuestion()">Previous Question</button>
+    <button type="button" onclick="generateJSON()">Next</button>
+    <button type="button" onclick="resetForm()">Reset</button>
+    <button type="button" onclick="saveData()">Save</button>
+
+    <button id="generateJsonBtn" type="button" onclick="generateFinalJSON()">Generate JSON</button>
+
+    <!-- Added button to go back to index.htm -->
+    <a href="index.html"><button type="button">Back to Index</button></a>
+</form>
+
+
+<script>
+    let quizData = {
+        quizTitle: "",
+        questions: []
+    };
+    let currentQuestionIndex = 0;
+
+    function generateJSON() {
+        if (currentQuestionIndex === 0) {
+            // Capture quiz title only for the first question
+            quizData.quizTitle = document.getElementById('quizTitle').value;
+        }
+
+        const question = document.getElementById('question').value;
+        const answerOne = document.getElementById('answerOne').value;
+        const answerTwo = document.getElementById('answerTwo').value;
+        const answerThree = document.getElementById('answerThree').value;
+        const answerFour = document.getElementById('answerFour').value;
+        const correctAnswer = document.getElementById('correctAnswer').value;
+
+        const questionData = {
+            question: question,
+            answerOne: answerOne,
+            answerTwo: answerTwo,
+            answerThree: answerThree,
+            answerFour: answerFour,
+            correctAnswer: correctAnswer
+        };
+
+        if (currentQuestionIndex < quizData.questions.length) {
+            quizData.questions[currentQuestionIndex] = questionData;
+        } else {
+            quizData.questions.push(questionData);
+        }
+
+        currentQuestionIndex++;
+        displayQuestion();
+        updateQuestionNumbers();
+    }
+
+    function previousQuestion() {
+        currentQuestionIndex = Math.max(0, currentQuestionIndex - 1);
+        displayQuestion();
+    }
+
+    function resetForm() {
+        document.getElementById('quizTitle').value = '';
+        document.getElementById('question').value = '';
+        document.getElementById('answerOne').value = '';
+        document.getElementById('answerTwo').value = '';
+        document.getElementById('answerThree').value = '';
+        document.getElementById('answerFour').value = '';
+        document.getElementById('correctAnswer').value = '';
+        quizData = { quizTitle: "", questions: [] };
+        currentQuestionIndex = 0;
+        displayQuestion();
+        updateQuestionNumbers();
+    }
+
+    function saveData() {
+        quizData.quizTitle = document.getElementById('quizTitle').value;
+        const question = document.getElementById('question').value;
+        const answerOne = document.getElementById('answerOne').value;
+        const answerTwo = document.getElementById('answerTwo').value;
+        const answerThree = document.getElementById('answerThree').value;
+        const answerFour = document.getElementById('answerFour').value;
+        const correctAnswer = document.getElementById('correctAnswer').value;
+
+        const questionData = {
+            question: question,
+            answerOne: answerOne,
+            answerTwo: answerTwo,
+            answerThree: answerThree,
+            answerFour: answerFour,
+            correctAnswer: correctAnswer
+        };
+
+        if (currentQuestionIndex < quizData.questions.length) {
+            quizData.questions[currentQuestionIndex] = questionData;
+        } else {
+            quizData.questions.push(questionData);
+        }
+
+        updateQuestionNumbers();
+    }
+
+    async function generateFinalJSON() {
+        const jsonString = JSON.stringify(quizData, null, 2);
+
+        try {
+            const response = await fetch('http://localhost:3000/api/createQuiz', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: jsonString,
+            });
+
+            if (response.ok) {
+                console.log('Quiz data sent successfully');
+            } else {
+                console.error('Failed to send quiz data');
+            }
+        } catch (error) {
+            console.error('Error while sending quiz data:', error);
+        }
+    }
+
+    function displayQuestion() {
+        if (currentQuestionIndex < quizData.questions.length) {
+            const currentQuestion = quizData.questions[currentQuestionIndex];
+            document.getElementById('question').value = currentQuestion.question;
+            document.getElementById('answerOne').value = currentQuestion.answerOne;
+            document.getElementById('answerTwo').value = currentQuestion.answerTwo;
+            document.getElementById('answerThree').value = currentQuestion.answerThree;
+            document.getElementById('answerFour').value = currentQuestion.answerFour;
+            document.getElementById('correctAnswer').value = currentQuestion.correctAnswer;
+        } else {
+            document.getElementById('quizTitle').value = quizData.quizTitle;
+            document.getElementById('question').value = '';
+            document.getElementById('answerOne').value = '';
+            document.getElementById('answerTwo').value = '';
+            document.getElementById('answerThree').value = '';
+            document.getElementById('answerFour').value = '';
+            document.getElementById('correctAnswer').value = '';
+        }
+    }
+
+    function updateQuestionNumbers() {
+        const questionNumbersContainer = document.getElementById('questionNumbers');
+        questionNumbersContainer.innerHTML = '';
+
+        for (let i = -1; i < quizData.questions.length; i++) {
+            const questionNumber = i + 2;
+            const questionNumberElement = document.createElement('li');
+            questionNumberElement.textContent = questionNumber;
+
+            if (i === currentQuestionIndex) {
+                questionNumberElement.classList.add('current-question');
+            }
+
+            questionNumberElement.onclick = () => goToQuestion(i);
+            questionNumbersContainer.appendChild(questionNumberElement);
+        }
+    }
+
+    function goToQuestion(index) {
+        currentQuestionIndex = index;
+        displayQuestion();
+    }
+
+    displayQuestion();
+    updateQuestionNumbers();
+
+  // Display the quiz title and the first question on page load
+  document.getElementById('quizTitle').value = quizData.quizTitle;
+    displayQuestion();
+    updateQuestionNumbers();
+
+    const firstQuestionNumber = document.querySelector('#questionNumbers li');
+    firstQuestionNumber.classList.add('current-question');
+</script>
+</body>
+</html>

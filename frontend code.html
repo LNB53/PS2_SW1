@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frontend</title>
+</head>
+<body>
+    <h1>Data from Server:</h1>
+    <div id="dataFromServer"></div>
+
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+        // Event listener to receive data sent from the server
+        window.addEventListener('message', function(event) {
+            // Check if the event data is the expected format
+            if (event.data && event.data.message) {
+                document.getElementById('dataFromServer').innerHTML = event.data;
+            }
+        });
+    </script>
+</body>
+</html>
