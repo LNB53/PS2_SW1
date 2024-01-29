@@ -12,7 +12,12 @@ let quizID
 let questionID
 let correctAnswer
 
-app.use(cors());
+const cors_options = {
+    origin: 'http://100.24.32.81:3000/'
+}
+
+app.use(cors(cors_options));
+
 app.use(bodyParser.json());
 app.use("/",express.static('public'))
 
@@ -284,10 +289,11 @@ app.get('/api/getScore/:student_id', (req, res) => {
                 SELECT ScoreID
                 FROM Score
                 WHERE studentID = ?
+                AND QuizID = ?
                 ORDER BY ScoreID DESC
                 LIMIT 3
              )`,
-            [student_id, student_id],
+            [student_id, student_id, quizID],
             (err, row) => {
                 if (err) {
                     res.status(500).json({ success: false, error: err.message });

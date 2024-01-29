@@ -32,8 +32,10 @@
 </div>
 <script>
 
+
+    const url = '100.24.32.81'
     let data
-    const ws = new WebSocket('ws://localhost:3000/myWebsocket');
+    const ws = new WebSocket(`ws://${url}:3000/myWebsocket`);
     var currentQuestionIndex = 0;
     var quizData;
 
@@ -54,28 +56,30 @@
         });
 };
 
-    function loadQuestionAndAnswers() {
-        var currentQuestion = quizData[currentQuestionIndex - 1];
+function loadQuestionAndAnswers() {
+    var currentQuestion = quizData[currentQuestionIndex - 1];
 
-        // Update question
-        document.getElementById('question-container').innerHTML = '<h3>' + currentQuestion.question + '</h3>';
+    // Update question
+    document.getElementById('question-container').innerHTML = '<h3>' + currentQuestion.question + '</h3>';
 
-        // Update answers
-        var answersContainer = document.getElementById('answers-container');
-        answersContainer.innerHTML = '';
-        currentQuestion.answers.forEach(function (answer, index) {
-            var button = document.createElement('button');
-            button.className = 'answer';
-            button.textContent = answer;
+    // Update answers
+    var answersContainer = document.getElementById('answers-container');
+    answersContainer.innerHTML = '';
+    var answerLetters = ['A:', 'B:', 'C:', 'D:'];
 
-            // Highlight the correct answer
-            if (answer === currentQuestion.correctAnswer) {
-                button.dataset.correct = true;
-            }
+    currentQuestion.answers.forEach(function (answer, index) {
+        var button = document.createElement('button');
+        button.className = 'answer';
+        button.textContent = answerLetters[index] + ' ' + answer;
 
-            answersContainer.appendChild(button);
-        });
-    }
+        // Highlight the correct answer
+        if (answer === currentQuestion.correctAnswer) {
+            button.dataset.correct = true;
+        }
+
+        answersContainer.appendChild(button);
+    });
+}
 
     function loadCorrectAnswer() {
         var correctButton = document.querySelector('.answer[data-correct="true"]');
@@ -124,7 +128,7 @@
 
     async function fetchQuizData(quizId) {
     try {
-        const response = await fetch('http://localhost:3000/api/getQuiz/' + quizId);
+        const response = await fetch(`http://${url}:3000/api/getQuiz/` + quizId);
         data = await response.json();
 
         console.log('Received data from server:', data.questions.length);

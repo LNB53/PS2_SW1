@@ -28,24 +28,26 @@ body {
 
 h1 {
     color: #333;
+    font-size: 3em;
 }
 
 .question {
     margin-bottom: 20px;
+    font-size: 2em;
 }
 
 .answers-container {
     display: flex;
     flex-wrap: wrap;
     justify-content: space-between;
-    max-width: 300px;
+    max-width: 1500px;
 }
 
 .answer {
-    width: 48%;
-    margin: 1%;
-    padding: 10px;
-    font-size: 16px;
+    width: 46%; /* Adjust the width to leave more space for larger buttons */
+    margin: 2%; /* Adjust the margin accordingly */
+    padding: 15px;
+    font-size: 2em; /* Set the font size to 20 pixels */
     background-color: black;
     color: #fff;
     border: none;
@@ -60,8 +62,8 @@ h1 {
 
 .button {
     margin-top: 20px;
-    padding: 10px 20px;
-    font-size: 16px;
+    font-size: 24px; /* Set the font size to 24 pixels */
+    padding: 15px 30px; /* Add padding to make the buttons larger */
     background-color: black;
     color: #fff;
     border: none;

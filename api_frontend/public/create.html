@@ -47,6 +47,9 @@
 
 
 <script>
+
+    const url = '100.24.32.81'
+
     let quizData = {
         quizTitle: "",
         questions: []
@@ -136,7 +139,7 @@
         const jsonString = JSON.stringify(quizData, null, 2);
 
         try {
-            const response = await fetch('http://localhost:3000/api/createQuiz', {
+            const response = await fetch(`http://${url}:3000/api/createQuiz`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

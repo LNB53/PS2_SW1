@@ -22,6 +22,8 @@
 
 <script>
 
+const url = '100.24.32.81'
+
 document.addEventListener('DOMContentLoaded', function () {
     // Wait for the DOM to be ready
 
@@ -119,14 +121,14 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     // Create list items for the leaderboard initially
-    createLeaderboardItem('Player 1');
-    createLeaderboardItem('Player 2');
-    createLeaderboardItem('Player 3');
+    createLeaderboardItem('Jefke (r0844989)');
+    createLeaderboardItem('Joske (r0949032)');
+    createLeaderboardItem('Dirk (r0898448)');
 
     // Call the updateLeaderboardScore function for each player when the page loads
-    updateLeaderboardScore('Player 1', 'http://localhost:3000/api/getScore/r0844989');
-    updateLeaderboardScore('Player 2', 'http://localhost:3000/api/getScore/931107');
-    updateLeaderboardScore('Player 3', 'http://localhost:3000/api/getScore/931108');
+    updateLeaderboardScore('Jefke (r0844989)', `http://${url}:3000/api/getScore/r0844989`);
+    updateLeaderboardScore('Joske (r0949032)', `http://${url}:3000/api/getScore/r0949032`); 
+    updateLeaderboardScore('Dirk (r0898448)', `http://${url}:3000/api/getScore/r0898448`);
 });
 
 </script> <!-- Include your JavaScript file -->

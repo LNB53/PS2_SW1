@@ -55,6 +55,9 @@
 </form>
 
 <script>
+
+    const url = '100.24.32.81'    
+
     let quizData = {
         quizTitle: "",
         questions: []
@@ -237,7 +240,7 @@
     }
 
     // Make a GET request to the endpoint with the dynamic quiz ID
-    fetch(`http://localhost:3001/api/getQuiz/${quizId}`)
+    fetch(`http://${url}:3000/api/getQuiz/${quizId}`)
         .then(response => {
             if (!response.ok) {
                 throw new Error(`Network response was not ok: ${response.status}`);
