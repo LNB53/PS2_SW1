@@ -13,50 +13,122 @@
 </header>
 
 <section>
-    <ul class="leaderboard">
-        <li class="leaderboard-item">
-            <div class="position">1st</div>
-            <div class="leaderboard-content">
-                <h2>Player 1</h2>
-                <p>Score: 10</p>
-            </div>
-        </li>
-
-        <li class="leaderboard-item">
-            <div class="position">2nd</div>
-            <div class="leaderboard-content">
-                <h2>Player 2</h2>
-                <p>Score: 8</p>
-            </div>
-        </li>
-
-        <li class="leaderboard-item">
-            <div class="position">3rd</div>
-            <div class="leaderboard-content">
-                <h2>Player 3</h2>
-                <p>Score: 7</p>
-            </div>
-        </li>
-
-        <li class="leaderboard-item">
-            <div class="position">4th</div>
-            <div class="leaderboard-content">
-                <h2>Player 4</h2>
-                <p>Score: 6</p>
-            </div>
-        </li>
-
-        <li class="leaderboard-item">
-            <div class="position">5th</div>
-            <div class="leaderboard-content">
-                <h2>Player 5</h2>
-                <p>Score: 5</p>
-            </div>
-        </li>
+    <ul id="leaderboard-list" class="leaderboard">
+        <!-- Leaderboard items will be added dynamically here -->
     </ul>
 
     <a href="index.html" class="back-button">Back to Home</a>
 </section>
 
+<script>
+
+document.addEventListener('DOMContentLoaded', function () {
+    // Wait for the DOM to be ready
+
+    // Function to fetch scores from your API endpoint
+    async function fetchScore(endpoint) {
+        try {
+            const response = await fetch(endpoint); 
+            const data = await response.json();
+            return data; // Assuming the API response contains only the score
+        } catch (error) {
+            console.error(`Error fetching score for ${endpoint}:`, error);
+            return null;
+        }
+    }
+
+    // Function to create a list item for the leaderboard
+    function createLeaderboardItem(playerName) {
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const listItem = document.createElement('li');
+        listItem.className = 'leaderboard-item';
+        listItem.innerHTML = `
+            <div class="position">1st</div>
+            <div class="leaderboard-content">
+                <h2>${playerName}</h2>
+                <p>Score: 0</p>
+            </div>
+        `;
+        leaderboardList.appendChild(listItem);
+        return listItem;
+    }
+
+    // Function to update the leaderboard score in the DOM
+    async function updateLeaderboardScore(playerName, endpoint) {
+        const leaderboardList = document.getElementById('leaderboard-list');
+
+        // Find the leaderboard item for the specific player
+        const playerListItem = [...leaderboardList.children].find(item =>
+            item.querySelector('.leaderboard-content h2').textContent === playerName
+        );
+
+        // Check if the playerListItem is defined
+        if (playerListItem) {
+            const scoreElement = playerListItem.querySelector('.leaderboard-content p');
+
+            // Fetch score from the API
+            const data = await fetchScore(endpoint);
+
+            // Check if data is defined before attempting to update the content
+            if (data !== null && data !== undefined && typeof data === 'number') {
+                // Check if scoreElement is defined before attempting to update its content
+                if (scoreElement) {
+                    scoreElement.textContent = `Score: ${data}`;
+                } else {
+                    console.error(`Score element not found for ${playerName}.`);
+                }
+            } else {
+                console.error(`Invalid or undefined score received from the API for ${playerName}.`);
+            }
+
+            // Update leaderboard order based on scores
+            sortLeaderboard();
+        } else {
+            console.error(`No child element found in leaderboard for ${playerName}.`);
+        }
+    }
+
+    // Function to sort leaderboard items based on scores
+    function sortLeaderboard() {
+        const leaderboardList = document.getElementById('leaderboard-list');
+        const items = [...leaderboardList.children];
+
+        // Sort items based on scores in descending order
+        items.sort((a, b) => {
+            const scoreA = parseInt(a.querySelector('.leaderboard-content p').textContent.split(': ')[1]);
+            const scoreB = parseInt(b.querySelector('.leaderboard-content p').textContent.split(': ')[1]);
+            return scoreB - scoreA;
+        });
+
+        // Update positions after sorting
+        items.forEach((item, index) => {
+            const positionElement = item.querySelector('.position');
+            positionElement.textContent = `${index + 1}${getOrdinalSuffix(index + 1)}`;
+        });
+
+        // Update the DOM with the sorted items
+        leaderboardList.innerHTML = '';
+        items.forEach(item => leaderboardList.appendChild(item));
+    }
+
+    // Function to get the ordinal suffix for a number
+    function getOrdinalSuffix(number) {
+        const suffixes = ["th", "st", "nd", "rd"];
+        const v = number % 100;
+        return (suffixes[(v - 20) % 10] || suffixes[v] || suffixes[0]);
+    }
+
+    // Create list items for the leaderboard initially
+    createLeaderboardItem('Player 1');
+    createLeaderboardItem('Player 2');
+    createLeaderboardItem('Player 3');
+
+    // Call the updateLeaderboardScore function for each player when the page loads
+    updateLeaderboardScore('Player 1', 'http://localhost:3000/api/getScore/r0844989');
+    updateLeaderboardScore('Player 2', 'http://localhost:3000/api/getScore/931107');
+    updateLeaderboardScore('Player 3', 'http://localhost:3000/api/getScore/931108');
+});
+
+</script> <!-- Include your JavaScript file -->
 </body>
 </html>

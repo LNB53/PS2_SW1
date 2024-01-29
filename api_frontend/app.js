@@ -48,7 +48,7 @@ wsServer.on("connection", function(ws) {
         });
     });
 });
-myServer.on('upgrade', async function upgrade(request, socket, head) {      //handling upgrade(http to websocekt) event
+myServer.on('upgrade', async function upgrade(request, socket, head) {      //handling upgrade(http to websockt) event
 
     
     
@@ -273,10 +273,44 @@ app.get('/api/getQuestionId', (req, res) => {
     }
 });
 
+app.get('/api/getScore/:student_id', (req, res) => {
+    const student_id = req.params.student_id; // Corrected to extract the student_id parameter
+    try {
+        db.get(
+            `SELECT SUM(score) as score
+             FROM Score
+             WHERE studentID = ?
+             AND ScoreID IN (
+                SELECT ScoreID
+                FROM Score
+                WHERE studentID = ?
+                ORDER BY ScoreID DESC
+                LIMIT 3
+             )`,
+            [student_id, student_id],
+            (err, row) => {
+                if (err) {
+                    res.status(500).json({ success: false, error: err.message });
+                    return;
+                }
+
+                // Check if the result is null (no records found) and handle accordingly
+                const score = row ? row.score : 0;
+
+                res.json(score);
+            }
+        );
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
+
 app.get('/api/getCorrectAnswer', (req, res) => {
     try {
         const questionId = questionID;
         
+        
+
         // Fetch the correct answer for the given questionId
         db.get('SELECT correctAnswer, answerOne, answerTwo, answerThree, answerFour FROM Question WHERE questionID = ?', questionId, (err, row) => {
             if (err) {
