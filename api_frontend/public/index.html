@@ -160,21 +160,19 @@ document.getElementById('loadQuizButton').addEventListener('click', function () 
     }
 });
 
-    document.getElementById('correct-answer-button').addEventListener('click', loadCorrectAnswer);
+document.getElementById('correct-answer-button').addEventListener('click', function() {
+    loadCorrectAnswer();
 
-
+});
 
 
 
     window.onbeforeunload = function() {
         const message = {
         quizId: parseInt(document.getElementById('quizIdInput').value),
-        questionIndex: 0 // Send the updated index to the server
+        questionIndex: 0, // Send the updated index to the server
+        show: 0
     };
-
-
-
-
 
 
 
@@ -190,7 +188,9 @@ document.getElementById('loadQuizButton').addEventListener('click', function () 
             redirectToLeaderPage();
             const message = {
         quizId: parseInt(document.getElementById('quizIdInput').value),
-        questionIndex: 0 // Send the updated index to the server
+        questionIndex: 0, // Send the updated index to the server
+        show: 0
+        
     };
 
     // Send the quiz and question information to the server
@@ -199,7 +199,8 @@ document.getElementById('loadQuizButton').addEventListener('click', function () 
         else {
     const message = {
         quizId: parseInt(document.getElementById('quizIdInput').value),
-        questionIndex: currentQuestionIndex + 1 // Send the updated index to the server
+        questionIndex: currentQuestionIndex + 1, // Send the updated index to the server
+        show: 0
     };
 
     // Send the quiz and question information to the server
@@ -263,8 +264,8 @@ ws.onmessage = function (event) {
     const message = JSON.parse(event.data);
 
     // Update quiz and question information based on the received message
-    const { quizId, questionIndex } = message;
-    console.log('Updated quizId:', quizId, 'questionIndex:', questionIndex);
+    const { quizId, questionIndex} = message;
+    console.log('Updated quizId:', quizId, 'questionIndex:', questionIndex, 'show ');
 
     // Load the question and answers based on the updated information
     fetchQuizData(quizId);

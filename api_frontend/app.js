@@ -3,13 +3,14 @@ const WebSocket = require("ws");
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const sqlite3 = require('sqlite3').verbose();
-const axios = require('axios');
+
 
 const app = express();
 const myServer = app.listen(3000)
 console.log("http://localhost:3000")
 let quizID
 let questionID
+let correctAnswer
 
 app.use(cors());
 app.use(bodyParser.json());
@@ -30,7 +31,7 @@ wsServer.on("connection", function(ws) {
         const message = JSON.parse(msg);
 
         // Extract quizId and questionIndex from the parsed message
-        const { quizId, questionIndex } = message;
+        const { quizId, questionIndex} = message;
         quizID = quizId
         console.log(quizID);
         console.log(questionID);
@@ -272,6 +273,45 @@ app.get('/api/getQuestionId', (req, res) => {
     }
 });
 
+app.get('/api/getCorrectAnswer', (req, res) => {
+    try {
+        const questionId = questionID;
+        
+        // Fetch the correct answer for the given questionId
+        db.get('SELECT correctAnswer, answerOne, answerTwo, answerThree, answerFour FROM Question WHERE questionID = ?', questionId, (err, row) => {
+            if (err) {
+                res.status(500).json({ success: false, error: err.message });
+                return;
+            }
+
+            if (row) {
+                const correctAnswer = row.correctAnswer;
+                const answerOne = row.answerOne
+                const answerTwo = row.answerTwo
+                const answerThree = row.answerThree
+                const answerFour = row.answerFour
+
+                if (correctAnswer == answerOne) {
+                    res.json('A');
+                }
+                else if (correctAnswer == answerTwo) {
+                    res.json('B');
+                }
+                else if (correctAnswer == answerThree) {
+                    res.json('C');
+                }
+                else if (correctAnswer == answerFour) {
+                    res.json('D');
+                }
+            
+            } else {
+                res.status(404).json({ success: false, error: 'Question not found' });
+            }
+        });
+    } catch (error) {
+        res.status(500).json({ success: false, error: error.message });
+    }
+});
 
 app.post(`/submit_answer/:student_id/:answer`, async (req, res) => {
     const {student_id, answer } = req.params;
@@ -414,6 +454,7 @@ function saveAnswerToDatabase(finalAnswer, student_id, question_id, quiz_id) {
     });
 }
 
+
 function calculateScore(answerID, student_id, question_id, quiz_id) {
     return new Promise((resolve, reject) => {
         // Fetch the correct answer for the question
@@ -423,7 +464,7 @@ function calculateScore(answerID, student_id, question_id, quiz_id) {
                 return;
             }
 
-            const correctAnswer = row.correctAnswer;
+            correctAnswer = row.correctAnswer;
 
             // Fetch the submitted answer
             db.get('SELECT answer FROM Answer WHERE answerID = ?', [answerID], (err, row) => {
